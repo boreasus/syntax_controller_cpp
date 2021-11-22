@@ -10,100 +10,9 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include <string>
-#include <string.h>
-using namespace std;
-namespace fs = std::filesystem;
-using std::filesystem::directory_iterator;
 
 
-int lineCounter = 1;
-bool threeCharControl(char c);
-void ifController(FILE* f, char c);
-void forController(FILE* f, char c);
-void whileController(FILE* f, char c);
-void bracketController(FILE* f, char c,string s);
-void squareBracketController(FILE* f, char c);
-void leximeController(FILE* f, char c);
-
-
-
-int main()
-{
-	string line, current_file;
-	int module_counter = 0;
-
-
-	string file_name = "input.cpp";
-	FILE* f = fopen(file_name.c_str(), "r+");
-	char cc = '_';
-	int lineCounter = 1;
-	
-
-
-	while (cc!=EOF) {
-		cc = getc(f);
-		if (cc == '\n')
-			lineCounter++;
-		leximeController(f, cc);
-	}
-
-
-	return 0;
-}
-
-
-
-void squareBracketController(FILE* f, char c) {
-	int currentLine = lineCounter;
-	while (true) {
-		c = getc(f);
-		if (c == EOF) {
-			cout << "There is a missing a '}' of which you put '{' at line " << currentLine << endl;
-			break;
-		}
-		if (c == '}') {
-			break;
-		}
-		leximeController(f, c);
-	}
-}
-
-
-
-void bracketController(FILE* f, char c, string s) {
-	int currentLine = lineCounter;
-	while (true) {
-		c = getc(f);
-		if (c == '\n') lineCounter++;
-
-		if (!threeCharControl(c)) {
-			cout << "At line " << currentLine << " there is a " << s << " syntax error.Missing '('" << endl;
-			fseek(f, -1, SEEK_CUR);
-			break;
-		}
-
-		if (c == '(') {
-			while (true) {
-				c = getc(f);
-				if (c == '\n') lineCounter++;
-				if (c == '\n' || c == EOF) {
-					cout << "At line " << currentLine << " there is a " << s << " syntax error. Missing ')'" << endl;
-					break;
-				}
-				else if (c == ')') {
-					break;
-				}
-			}
-			break;
-		}
-
-
-	}
-}
-
-
-bool threeCharControl(char c) {
+bool control(char c) {
 	bool controller = false;
 	if (c == ' ') controller = true;
 	if (c == '\n') controller = true;
@@ -113,90 +22,194 @@ bool threeCharControl(char c) {
 
 
 
-void leximeController(FILE* f, char c) {
-	if (c == '#') {
-		while (c != '\n')c = getc(f);
-	}
-	if (c == '/') {
-		c = getc(f);
-		if (c == '/') {
-			while (c != '\n')c = getc(f);
-		}
-	}
-	if (c == '\n')
-		lineCounter++;
-	if (c == 'i')
-		ifController(f, c);
-	if (c == 'w')
-		whileController(f, c);
-	if (c == 'f')
-		forController(f, c);
-	if (c == '{')
-		squareBracketController(f, c);
-
-}
+using namespace std;
+namespace fs = std::filesystem;
+using std::filesystem::directory_iterator;
 
 
-void forController(FILE* f, char c) {
-	c = getc(f);
-	if (c == '\n')
-		lineCounter++;
-	if (c == 'o') {
-		c = getc(f);
-		if (c == '\n')
-			lineCounter++;
-		if (c == 'r') {
-			c = getc(f);
-			if (c > 65 && c < 122) {
-				return;
+
+int main(void)
+{
+
+	string line, current_file;
+	ofstream result_file{ "total.cpp" };
+	string current_path = fs::current_path().string();
+	//the path main.cpp working on
+
+
+	cout << "Current path is : " << current_path << endl;
+
+
+	//pth variable access every file in the folder 
+	for (const auto& file : directory_iterator(current_path))
+	{
+		current_file = file.path().string();
+		ifstream working_file(current_file.c_str());
+		if (current_file.substr(current_file.length() - 4) == ".cpp") {
+			if (current_file.substr(current_file.length() - 8) == "main.cpp")
+				continue;
+			if (current_file.substr(current_file.length() - 9) == "total.cpp")
+				continue;
+
+			if (working_file && result_file)
+			{
+
+
+				cout << file.path().string() << " OPENED" << endl;
+				module_counter++;
+				while (getline(working_file, line))
+				{
+
+					result_file << line << "\n";
+				}
+
 			}
-			fseek(f, -1, SEEK_CUR);
-			bracketController(f, c, "FOR");
+			else
+			{
+				cout << file.path().string() << " COULDN'T OPEN" << endl;
+			}
+			result_file.close();
 		}
+
+
+
 	}
-}
 
 
-void whileController(FILE* f, char c) {
-	c = getc(f);
-	if (c == '\n')
-		lineCounter++;
-	if (c == 'h') {
-		c = getc(f);
-		if (c == '\n')
-			lineCounter++;
-		if (c == 'i') {
-			c = getc(f);
-			if (c == '\n')
-				lineCounter++;
-			if (c == 'l') {
-				c = getc(f);
-				if (c == '\n')
-					lineCounter++;
-				if (c == 'e') {
-					c = getc(f);
-					if (c > 65 && c < 122) {
-						return;
+
+
+
+	string file_name = "main.cpp";
+	FILE* f = fopen(file_name.c_str(), "r+");
+	char cc = '_';
+	int lineCounter = 1,tempWhileLC,tempForLC,tempIfLC;
+
+	
+	for (int j = 1; j < 2; j++) {
+		if (j == 1) {
+			file_name = "total.cpp";
+			f = fopen(file_name.c_str(), "r+");
+		}
+
+
+
+
+		while (!feof(f)) {
+			cc = getc(f);
+			//for
+			if (cc == 'f') {
+				cc = getc(f);
+				if (cc == 'o') {
+					cc = getc(f);
+					if (cc == 'r') {
+						tempForLC = lineCounter;
+						while (true) {
+							cc = getc(f);
+							if (cc == '\n') lineCounter++;
+
+							if (!control(cc)) {
+								cout << "At line " << tempForLC << " there is a FOR syntax error. Missing '('" << endl;
+								break;
+							}
+
+							if (cc == '(') {
+								while (true) {
+									cc = getc(f);
+									if (cc == '\n') lineCounter++;
+									if (cc == '\n' || cc == EOF) {
+										cout << "At line " << tempForLC << " there is a FOR syntax error. Missing ')'" << endl;
+										break;
+									}
+									else if (cc == ')') {
+										break;
+									}
+								}
+								break;
+							}
+
+
+						}
 					}
-					fseek(f, -1, SEEK_CUR);
-					bracketController(f, c, "WHILE");
 				}
 			}
-		}
-	}
-}
 
-void ifController(FILE* f, char c) {
-	c = getc(f);
-	if (c == '\n')
-		lineCounter++;
-	if (c == 'f') {
-		c = getc(f);
-		if (c > 65 && c < 122) {
-			return;
-		}
-		fseek(f, -1, SEEK_CUR);
-		bracketController(f, c, "IF");
-	}
-}
+			//if
+			if (cc == 'i') {
+				cc = getc(f);
+				if (cc == 'f') {
+					cout << "if has fond\n";
+				}
+			}
 
+
+
+			//while
+
+			if (cc == 'w') {
+				cc = getc(f);
+				if (cc == 'h') {
+					cc = getc(f);
+					if (cc == 'i') {
+						cc = getc(f);
+						if (cc == 'l') {
+							cc = getc(f);
+							if (cc == 'e') {
+								tempWhileLC = lineCounter;
+								while (true) {
+									cc = getc(f);
+									if (cc == '\n') lineCounter++;
+
+									if (!control(cc)) {
+										cout << "At line " << tempWhileLC << " there is a WHILE syntax error. Missing '('" << endl;
+										break;
+									}
+
+									if (cc == '(') {
+										while (true) {
+											cc = getc(f);
+											if (cc == '\n') lineCounter++;
+											if (cc == '\n' || cc == EOF) {
+												cout << "At line " << tempWhileLC << " there is a WHILE syntax error. Missing ')'" << endl;
+												break;
+											}
+											else if (cc == ')') {
+												break;
+											}
+										}
+										break;
+									}
+
+
+								}
+							}
+
+						}
+					}
+				}
+			}
+
+
+			if (cc == '\n') lineCounter++;
+
+		}
+
+
+
+
+
+
+
+
+
+		if (j == 0) {
+		}
+		else {
+		}
+
+
+	}
+
+
+
+	return 0;
+}
